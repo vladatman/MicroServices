@@ -1,0 +1,91 @@
+version: "3"
+
+services:
+  facade_service:
+    build:
+      context: ./facade_service
+    ports:
+      - "7000:7000"
+    depends_on:
+      - logging_service_1
+      - logging_service_2
+      - logging_service_3
+      - messages_service
+    networks:
+      - hazelcast_cluster
+
+  hazelcast_1:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast_1
+    ports:
+      - "5701:5701"
+    networks:
+      - hazelcast_cluster
+
+  hazelcast_2:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast_2
+      HZ_NETWORK_JOIN: hazelcast_1
+    ports:
+      - "5702:5701"
+    networks:
+      - hazelcast_cluster
+
+  hazelcast_3:
+    image: hazelcast/hazelcast:latest
+    environment:
+      HZ_NETWORK_PUBLICADDRESS: hazelcast_3
+      HZ_NETWORK_JOIN: hazelcast_1
+    ports:
+      - "5703:5701"
+    networks:
+      - hazelcast_cluster
+
+  logging_service_1:
+    build:
+      context: ./logging_service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast_1:5701"
+    depends_on:
+      - hazelcast_1
+    ports:
+      - "7001:7001"
+    networks:
+      - hazelcast_cluster
+
+  logging_service_2:
+    build:
+      context: ./logging_service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast_2:5701"
+    depends_on:
+      - hazelcast_2
+    ports:
+      - "7002:7001"
+    networks:
+      - hazelcast_cluster
+
+  logging_service_3:
+    build:
+      context: ./logging_service
+    environment:
+      HAZELCAST_NODE_ADDRESS: "hazelcast_3:5701"
+    depends_on:
+      - hazelcast_2
+    ports:
+      - "7003:7001"
+    networks:
+      - hazelcast_cluster
+
+  messages_service:
+    build:
+      context: ./messages_service
+    ports:
+      - "7004:7002"
+    networks:
+      - hazelcast_cluster
+
+networks:
+  hazelcast_cluster:
